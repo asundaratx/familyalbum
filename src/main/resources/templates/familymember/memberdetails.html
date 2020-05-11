@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Member details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
+    <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+    <script>
+    $('.input-group.date').datepicker({
+        autoclose: true,
+        todayHighlight: true
+    });
+    </script>
+
+</head>
+<body>
+<h1>Member Details Form</h1>
+<div class="container">
+<form th:action="@{/memberdetails}" th:object="${memberdetails}" method="post">
+
+    <div class="form-group row">
+        <label for="firstName" class="col-sm-2 col-form-label">First Name</label>
+        <div class="col-sm-10">
+            <input type="text" th:field="*{familyMember.firstname}" class="form-control" id="firstName" placeholder="Enter first name">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="lastName" class="col-sm-2 col-form-label">Last Name</label>
+        <div class="col-sm-10">
+            <input type="text" th:field="*{familyMember.lastname}" class="form-control" id="lastName" placeholder="Enter last name">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="occupation" class="col-sm-2 col-form-label">Occupation</label>
+        <div class="col-sm-10">
+            <input type="text" th:field="*{familyMember.occupation}" class="form-control" id="occupation" placeholder="Enter occupation">
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="domicile" class="col-sm-2 col-form-label">Domicile</label>
+        <div class="col-sm-10">
+            <input type="text" th:field="*{familyMember.domicile}" class="form-control" id="domicile" placeholder="Enter domicile">
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="birthDate" class="col-sm-2 col-form-label">Birth Date</label>
+        <div class="input-group date col-sm-10">
+            <input type="date" th:field="*{familyMember.birthDate}" class="form-control" id="birthDate" autocomplete="off">
+            <div class="input-group-append">
+                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="fatherFullName" class="col-sm-2 col-form-label"> Father's name</label>
+        <div class="col-sm-10">
+            <select th:field="*{father.id}" id="fatherFullName">
+                <option value="0" text="N/A"></option>
+                <option th:each="i : *{potentialRelations}" th:value="${i.id}" th:text="|${i.firstname} ${i.lastname}|" ></option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="motherFullName" class="col-sm-2 col-form-label"> Mother's name</label>
+        <div class="col-sm-10">
+            <select th:field="*{mother.id}" id="motherFullName">
+                <option value="0" text="N/A"></option>
+                <option th:each="i : *{potentialRelations}" th:value="${i.id}" th:text="|${i.firstname} ${i.lastname}|" ></option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="spouseFullName" class="col-sm-2 col-form-label"> Spouse's name</label>
+        <div class="col-sm-10">
+            <select th:field="*{spouse.id}" id="spouseFullName">
+                <option value="0" text="N/A"></option>
+                <option th:each="i : *{potentialRelations}" th:value="${i.id}" th:text="|${i.firstname} ${i.lastname}|" ></option>
+            </select>
+        </div>
+    </div>
+    <div th:if="*{familyMember.isMarried} " class="form-group row">
+            <label for="marriageDate" class="col-sm-2 col-form-label">Marriage Date</label>
+            <div class="col-sm-10 input-group date" id="datetimepicker1">
+                <input type="date" th:field="*{marriageEvent.eventDate}" class="form-control" id="marriageDate" placeholder="Marriage Date">
+                <span class="input-group-append">
+                    <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                </span>
+            </div>
+    </div>
+    <div th:if="*{familyMember.isMarried} " class="form-group row">
+        <label for="marriageLocation" class="col-sm-2 col-form-label">Marriage Location</label>
+        <div class="col-sm-10 ">
+            <input type="text" th:field="*{marriageEvent.eventDetails['Location']}" class="form-control" id="marriageLocation" placeholder="Marriage Date">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="deathDate" class="col-sm-2 col-form-label">Death Date</label>
+        <div class="col-sm-10 input-group date" >
+            <input type="date" th:field="*{deathEvent.eventDate}" class="form-control" id="deathDate" >
+            <span class="input-group-append">
+                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+            </span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="deathCause" class="col-sm-2 col-form-label">Death Cause</label>
+        <div class="col-sm-10 input-group date" >
+            <input type="text" th:field="*{deathEvent.eventDetails['Location']}" class="form-control" id="deathCause" >
+            <span class="input-group-append">
+                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+            </span>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary" >Save</button>
+    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#exampleModal">Delete member</button>
+
+    <!-- Modal for delete confirmation-->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Member delete confirmation</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this member record?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <a th:href="@{/memberdetails/delete/{id}(id=*{familyMember.id})}" >
+                        <span class="btn btn-danger" value="delete">Delete</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+</div>
+</body>
+</html>

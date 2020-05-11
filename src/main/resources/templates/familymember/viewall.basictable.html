@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Family Album</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
+    <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Family Members Table</h1>
+    <div class="row col-md-10 table-responsive">
+        <table id="familyMemberTable" class="table table-striped table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th> BirthDate </th>
+                <th>Occupation</th>
+                <th>Domicile</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="member, rowStat: ${familymembers}"
+                th:style="${rowStat.odd} ? 'color: gray' : 'color: blue;'">
+                <td th:text="${member.id}">1</td>
+                <td>
+                    <a th:href="@{/memberdetails(fullname=|${member.firstname} ${member.lastname}|)}" th:text="|${member.firstname} ${member.lastname}|"/>
+                </td>
+                <td th:text="${member.birthDate} ? ${member.birthDate}: 'Unknown'">Unknown</td>
+                <td th:text="${member.occupation}">AVE N</td>
+                <td th:text="${member.domicile}">77587</td>
+            </tr>
+            </tbody>
+        </table>
+        <a th:href="@{/memberdetails(fullname=)}" class="btn btn-large btn-success">Create member</a>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Index: Family Album</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
+    <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+            $.ajaxSetup({
+      beforeSend : function(xhr, settings) {
+        if (settings.type == 'POST' || settings.type == 'PUT'
+            || settings.type == 'DELETE') {
+          if (!(/^http:.*/.test(settings.url) || /^https:.*/
+            .test(settings.url))) {
+            // Only send the token to relative URLs i.e. locally.
+            xhr.setRequestHeader("X-XSRF-TOKEN",
+              Cookies.get('XSRF-TOKEN'));
+          }
+        }
+      }
+    });
+    $.get("/user", function(data) {
+        $("#user").html(data.name);
+        $("#username").html(data.name);
+        if (data.hasOwnProperty("authorized")) {
+            console.log("User is authorized")
+            $(".authorized").show()
+        } else {
+            console.log("User is NOT authorized")
+            $(".unauthorized").show()
+        }
+        $("#email").html(data.email);
+        $(".unauthenticated").hide()
+    });
+    var logout = function() {
+        $.post("/logout", function() {
+            $("#user").html('');
+            $("#username").html('');
+            $("#email").html('');
+            $(".unauthenticated").show();
+            $(".authorized").hide();
+            $(".unauthorized").hide();
+        })
+        return true;
+    }
+    </script>
+</head>
+<body>
+
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Family Album</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Index</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="container unauthenticated">
+    With GitHub: <a href="/oauth2/authorization/github">click here</a>
+</div>
+<div class="container unauthorized" style="display:none">
+    <div class="hero-unit">
+        <h1>Index</h1>
+        <p>
+            Logged in as: <span id="username"></span>
+            <br>
+            To obtain authorization, use <a href="mailto:sundar.aparna@gmail.com?subject=AuthorizationRequest">Contact admin </a>
+        </p>
+    </div>
+</div>
+<div class="container authorized" style="display:none">
+    <div class="hero-unit">
+        <h1>Index</h1>
+        <p>
+            Logged in as: <span id="user"></span>
+            <br>
+            Logged in agaisnt email: <span id="email"></span>
+            <br>
+            Get started by selecting from the available functionality.
+        </p>
+        <p>
+            <a href="/familymember" th:href="@{/familymember/view-all}" class="btn btn-large btn-success">View all members</a>
+            <a href="#" class="btn btn-large btn-success">Search member</a>
+            <a href="#" class="btn btn-large btn-success">Generate tree view</a>
+            <button onClick="logout()" class="btn btn-primary">Logout</button>
+        </p>
+    </div>
+</div>
+</body>
+</html>
