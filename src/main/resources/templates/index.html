@@ -25,25 +25,26 @@
     });
     $.get("/user", function(data) {
         $("#user").html(data.name);
-        $("#username").html(data.name);
         if (data.hasOwnProperty("authorized")) {
             console.log("User is authorized")
             $(".authorized").show()
-        } else {
-            console.log("User is NOT authorized")
-            $(".unauthorized").show()
         }
         $("#email").html(data.email);
         $(".unauthenticated").hide()
     });
+    $.get("/error", function(data) {
+        if (data) {
+        $(".error").html(data);
+        } else {
+        $(".error").html('');
+        }
+    });
     var logout = function() {
         $.post("/logout", function() {
             $("#user").html('');
-            $("#username").html('');
             $("#email").html('');
             $(".unauthenticated").show();
             $(".authorized").hide();
-            $(".unauthorized").hide();
         })
         return true;
     }
@@ -63,19 +64,13 @@
         </div>
     </div>
 </div>
+<div class="container text-danger error">
+
+</div>
 <div class="container unauthenticated">
-    With GitHub: <a href="/oauth2/authorization/github">click here</a>
+    Login with GitHub: <a href="/oauth2/authorization/github">click here</a>
 </div>
-<div class="container unauthorized" style="display:none">
-    <div class="hero-unit">
-        <h1>Index</h1>
-        <p>
-            Logged in as: <span id="username"></span>
-            <br>
-            To obtain authorization, use <a href="mailto:sundar.aparna@gmail.com?subject=AuthorizationRequest">Contact admin </a>
-        </p>
-    </div>
-</div>
+
 <div class="container authorized" style="display:none">
     <div class="hero-unit">
         <h1>Index</h1>
