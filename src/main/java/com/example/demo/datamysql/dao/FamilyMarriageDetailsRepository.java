@@ -9,7 +9,8 @@ import java.util.Date;
 import java.util.List;
 
 public interface FamilyMarriageDetailsRepository extends CrudRepository<MarriedCouple, Integer> {
-    List<MarriedCouple> findBySpouse1IdOrSpouse2Id(Integer spouse1_id, Integer spouse2_id);
+    MarriedCouple findBySpouse1IdOrSpouse2Id(Integer spouse1_id, Integer spouse2_id);
+
     @Modifying
     @Query("delete from MarriedCouple d where d.spouse1Id=:spouse1Id or d.spouse2Id=:spouse2Id")
     void deleteCouple(@Param("spouse1Id") Integer spouse1Id, @Param("spouse2Id") Integer spouse2Id);

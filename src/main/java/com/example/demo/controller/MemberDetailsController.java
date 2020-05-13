@@ -1,6 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.datamysql.dao.*;
+import com.example.demo.service.FamilyMarriageDetailsService;
+import com.example.demo.service.FamilyMemberService;
+import com.example.demo.service.FamilyDeathDetailsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
@@ -16,12 +19,13 @@ import java.util.*;
 @Controller
 @Slf4j
 public class MemberDetailsController {
+
     @Autowired
-    private FamilyMemberRepository familyMemberRepository;
+    private FamilyMarriageDetailsService marriageDetailsService;
     @Autowired
-    private FamilyMarriageDetailsRepository familyMarriageDetailsRepository;
+    private FamilyDeathDetailsService familyDeathDetailsService;
     @Autowired
-    private FamilyDeathDetailsRepository familyDeathDetailsRepository;
+    private FamilyMemberService familyMemberService;
 
     @InitBinder
     public void initBinder(WebDataBinder binder){
@@ -31,19 +35,27 @@ public class MemberDetailsController {
 
     @GetMapping("/memberdetails/delete/{id}")
     @Transactional
-    public String updateUser(@PathVariable("id") long id, FamilyMemberDetails memberDetails, Model model) {
-        log.info("Got family member: ", memberDetails.getFamilyMember());
+    public String deleteUser(@PathVariable("id") long id, FamilyMemberDetails memberDetails, Model model) {
+        log.info("Deleting family member: ", memberDetails.getFamilyMember());
+        Integer memberId = Integer.valueOf((int) id);
         FamilyMember familyMember = memberDetails.getFamilyMember();
-        log.info("Got path id: ", id);
-        familyMarriageDetailsRepository.deleteCouple(Integer.valueOf((int) id),Integer.valueOf((int) id));
-        familyMemberRepository.deleteById(Integer.valueOf((int) id));
+        MarriedCouple marriedCouple = marriageDetailsService.findBySpouse1IdOrSpouse2Id(memberId,memberId);
+        if (marriedCouple!=null) {
+            Integer spouseId = null;
+            if (marriedCouple.getSpouse2Id().equals(memberId)) spouseId=marriedCouple.getSpouse1Id();
+            if (marriedCouple.getSpouse1Id().equals(memberId)) spouseId=marriedCouple.getSpouse2Id();
+            marriageDetailsService.deleteCouple(memberId, memberId);
+            familyMemberService.updateMarriageStatus(Boolean.FALSE, spouseId);
+        }
+        familyDeathDetailsService.deleteByMemberId(Integer.valueOf((int) id));
+        familyMemberService.deleteByMemberId(Integer.valueOf((int) id));
         return "index.html";
     }
 
     @PostMapping( path ="memberdetails")
     @Transactional
     public String createOrUpdateMemberDetails(FamilyMemberDetails memberDetails, Model model){
-        log.info("Got family member: ", memberDetails.getFamilyMember());
+        log.info("Create or update for family member: ", memberDetails.getFamilyMember());
         FamilyMember familyMember = memberDetails.getFamilyMember();
         FamilyMember mother = memberDetails.getMother();
         FamilyMember father = memberDetails.getFather();
@@ -51,61 +63,69 @@ public class MemberDetailsController {
         Event marriageEvent = memberDetails.getMarriageEvent();
         Event deathEvent = memberDetails.getDeathEvent();
 
-        //TODO need to match by firstname, lastname, birthdate
-        List<FamilyMember> existingMemberList = familyMemberRepository.findByFirstname(familyMember.getFirstname());
+        //TODO need to match by firstname, lastname, AND birthdate
+        List<FamilyMember> existingMemberList = familyMemberService.getMemberByFirstnameAndLastname(familyMember.getFirstname(), familyMember.getLastname());
         if (existingMemberList!=null && existingMemberList.size() == 1) {
             FamilyMember existingMember = existingMemberList.get(0);
-            log.info("Do we need to add relations");
             if(existingMember.getFatherId()== null&& father!=null && father.getId()>0 || existingMember.getFatherId()!=father.getId())
-                familyMemberRepository.updateFather(father.getId(), existingMember.getId());
+                familyMemberService.updateFather(father.getId(), existingMember.getId());
             if(existingMember.getMotherId()== null&&mother!=null&&mother.getId()>0 || existingMember.getMotherId()!=mother.getId())
-                familyMemberRepository.updateMother(mother.getId(), existingMember.getId());
+                familyMemberService.updateMother(mother.getId(), existingMember.getId());
             log.info("Updating existing member");
-            familyMemberRepository.updateGivenFamilyMember(familyMember.getFirstname(),
+            familyMemberService.updateGivenFamilyMember(familyMember.getFirstname(),
                     familyMember.getLastname(), familyMember.getOccupation(),
                     familyMember.getDomicile(),familyMember.getBirthDate(), existingMemberList.get(0).getId());
-            DeathDetails existingDeathDetails = familyDeathDetailsRepository.findByMemberId(existingMember.getId());
+            DeathDetails existingDeathDetails = familyDeathDetailsService.findByMemberId(existingMember.getId());
             if(deathEvent!=null){
                 if (existingDeathDetails!=null) {
-                    if (deathEvent.getEventDate() != null && existingDeathDetails.getDeathDate()!=null) {
-                        familyDeathDetailsRepository.updateDeathEventDate(existingDeathDetails.getId(),deathEvent.getEventDate());
+                    if (deathEvent.getEventDate() != null && !deathEvent.getEventDate().equals(existingDeathDetails.getDeathDate())) {
+                        familyDeathDetailsService.updateDeathEventDate(existingDeathDetails.getId(),deathEvent.getEventDate());
                     }
-                    if(deathEvent.getEventDetails().get("Cause_death")!=null){
-                        familyDeathDetailsRepository.updateDeathEventCause(existingDeathDetails.getId(), deathEvent.getEventDetails().get("Cause_death"));
+                    if(deathEvent.getEventDetails().get("Cause_death")!=null && !deathEvent.getEventDetails().get("Cause_death").equals(existingDeathDetails.getCauseDeath())){
+                        familyDeathDetailsService.updateDeathEventCause(existingDeathDetails.getId(), deathEvent.getEventDetails().get("Cause_death"));
                     }
                 }else {
-                    familyMemberRepository.updateDeathStatus(Boolean.FALSE, existingMember.getId());
+                    familyMemberService.updateIsAliveStatus(Boolean.FALSE, existingMember.getId());
                     DeathDetails deathDetails = new DeathDetails();
                     deathDetails.setCauseDeath(deathEvent.getEventDetails().get("Cause_death"));
                     deathDetails.setDeathDate(deathEvent.getEventDate());
-                    deathDetails.setMemberId(familyMember.getId());
+                    deathDetails.setMemberId(existingMember.getId());
+                    familyDeathDetailsService.save(deathDetails);
                 }
             }
-            List<MarriedCouple> couples = familyMarriageDetailsRepository.findBySpouse1IdOrSpouse2Id(existingMember.getId(),existingMember.getId());
-            MarriedCouple marriedCouple;
-            if (couples!= null && couples.size() == 1 ) {
-                // TODO Handle adding marriage details
-                marriedCouple = couples.get(0);
+            MarriedCouple marriedCouple = marriageDetailsService.findBySpouse1IdOrSpouse2Id(existingMember.getId(),existingMember.getId());
+            if (marriedCouple!= null  ) {
                 if (marriageEvent!=null) {
                     if (marriageEvent.getEventDate()!=null) {
-                        familyMarriageDetailsRepository.updateCoupleEventDate(marriedCouple.getId(),marriageEvent.getEventDate() );
+                        marriageDetailsService.updateCoupleEventDate(marriedCouple.getId(),marriageEvent.getEventDate() );
                     }
                     if (marriageEvent.getEventDetails().get("Location")!=null) {
-                        familyMarriageDetailsRepository.updateCoupleEventLocation(marriedCouple.getId(),marriageEvent.getEventDetails().get("Location") );
+                        marriageDetailsService.updateCoupleEventLocation(marriedCouple.getId(),marriageEvent.getEventDetails().get("Location") );
                     }
                 }
 
-            } else if(couples == null || couples.size() == 0){
-                MarriedCouple details = new MarriedCouple();
-                details.setSpouse1Id(existingMember.getId());
-                details.setSpouse2Id(spouse.getId());
-                familyMemberRepository.updateMarriageStatus(Boolean.TRUE,familyMember.getId());
-                familyMarriageDetailsRepository.save(details);
+            } else {
+                if(spouse!=null && spouse.getId() > 0) {
+                    MarriedCouple details = new MarriedCouple();
+                    details.setSpouse1Id(existingMember.getId());
+                    details.setSpouse2Id(spouse.getId());
+                    if (marriageEvent!=null) {
+                        if (marriageEvent.getEventDate()!=null) {
+                            details.setMarriageDate(marriageEvent.getEventDate());
+                        }
+                        if (marriageEvent.getEventDetails().get("Location")!=null) {
+                            details.setMarriageLocation(marriageEvent.getEventDetails().get("Location"));
+                        }
+                    }
+                    familyMemberService.updateMarriageStatus(Boolean.TRUE, existingMember.getId());
+                    familyMemberService.updateMarriageStatus(Boolean.TRUE, spouse.getId());
+                    marriageDetailsService.save(details);
+                }
             }
         } else {
-            log.info("creating member");
-            familyMember.setIsAlive(true);
-            familyMemberRepository.save(familyMember);
+            //TODO Handle case when multiple people have same first and last name. Alternately Add birthdate for uniqueness
+            log.info("creating member who is alive");
+            familyMemberService.save(familyMember);
         }
         return "index.html";
     }
@@ -115,11 +135,12 @@ public class MemberDetailsController {
         log.info("Getting family member details: ", fullname);
         FamilyMemberDetails familyMemberDetails = new FamilyMemberDetails();
         FamilyMember familyMember = null;
-        if (fullname!= null && !fullname.isEmpty()) {
+
+        if (fullname!= null && !fullname.isEmpty() && fullname.split(" ").length==2) {
             String[] names = fullname.split(" ");
-            familyMember = familyMemberRepository.findByFirstname(names[0]).get(0);
+            familyMember = familyMemberService.getMemberByFirstnameAndLastname(names[0], names[1]).get(0);
         }
-        List<FamilyMemberShort> allPossibleRelations = familyMemberRepository.findAllFamilyMemberShortProjectedBy();
+        List<FamilyMemberShort> allPossibleRelations = familyMemberService.findAllFamilyMemberShortProjectedBy();
         if (familyMember==null) {
             familyMemberDetails.setPotentialRelations(allPossibleRelations);
             model.addAttribute("memberdetails", familyMemberDetails);
@@ -128,23 +149,21 @@ public class MemberDetailsController {
         familyMemberDetails.setFamilyMember(familyMember);
 
         if(familyMember.getFatherId()!=null) {
-            Optional<FamilyMember> father = familyMemberRepository.findById(familyMember.getFatherId());
-            if(father.isPresent()) familyMemberDetails.setFather(father.get());
+            FamilyMember father = familyMemberService.findById(familyMember.getFatherId());
+            if(father!=null) familyMemberDetails.setFather(father);
         }
         if(familyMember.getMotherId()!=null) {
-            Optional<FamilyMember> mother = familyMemberRepository.findById(familyMember.getMotherId());
-            if (mother.isPresent()) familyMemberDetails.setMother(mother.get());
+            FamilyMember mother = familyMemberService.findById(familyMember.getMotherId());
+            if (mother!=null) familyMemberDetails.setMother(mother);
         }
         if (familyMember.getIsMarried()!=null && familyMember.getIsMarried().equals(Boolean.TRUE)) {
-            List<MarriedCouple> couples = familyMarriageDetailsRepository.findBySpouse1IdOrSpouse2Id(familyMember.getId(),familyMember.getId());
-            MarriedCouple marriedCouple;
-            if (couples!= null && couples.size() == 1) {
-                marriedCouple = couples.get(0);
+            MarriedCouple marriedCouple = marriageDetailsService.findBySpouse1IdOrSpouse2Id(familyMember.getId(),familyMember.getId());
+            if (marriedCouple!= null ) {
                 FamilyMember spouse = null;
                 if(familyMember.getId().equals(marriedCouple.getSpouse1Id())) {
-                    spouse=familyMemberRepository.findById(marriedCouple.getSpouse2Id()).get();
+                    spouse=familyMemberService.findById(marriedCouple.getSpouse2Id());
                 } else if(familyMember.getId().equals(marriedCouple.getSpouse2Id())) {
-                    spouse=familyMemberRepository.findById(marriedCouple.getSpouse1Id()).get();
+                    spouse=familyMemberService.findById(marriedCouple.getSpouse1Id());
                 }
                 familyMemberDetails.setSpouse(spouse);
                 Event marriageEvent = new Event();
@@ -161,7 +180,7 @@ public class MemberDetailsController {
         }
 
         if (familyMember.getIsAlive()!=null && familyMember.getIsAlive().equals(Boolean.FALSE) ){
-            DeathDetails deathDetails = familyDeathDetailsRepository.findByMemberId(familyMember.getId());
+            DeathDetails deathDetails = familyDeathDetailsService.findByMemberId(familyMember.getId());
             if (deathDetails!=null){
                 Event deathEvent = new Event();
                 deathEvent.setEventName("Death");

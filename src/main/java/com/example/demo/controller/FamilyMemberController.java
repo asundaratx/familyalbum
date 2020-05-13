@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.datamysql.dao.FamilyMember;
-import com.example.demo.datamysql.dao.FamilyMemberRepository;
+import com.example.demo.service.FamilyMemberService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -19,20 +19,19 @@ import java.util.List;
 @Slf4j
 public class FamilyMemberController {
     @Autowired
-    private FamilyMemberRepository familyMemberRepository;
+    private FamilyMemberService familyMemberService;
 
     @GetMapping(path="/all")
     public @ResponseBody
     Iterable<FamilyMember> getAllFamilyMembers() {
-        return familyMemberRepository.findAll();
+        return familyMemberService.findAllFamilyMembers();
     }
 
     @GetMapping(path = "find")
     public @ResponseBody
     List<FamilyMember> getMemberByName(@RequestParam(name="fullname") String fullname){
         log.info("Getting family member by name: ", fullname);
-        String[] names = fullname.split(" ");
-        return familyMemberRepository.findByFirstname(names[0]);
+        return familyMemberService.getMemberByFirstName(fullname);
     }
 
     @GetMapping(path = "view-all")

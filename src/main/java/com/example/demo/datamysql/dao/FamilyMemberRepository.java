@@ -10,6 +10,7 @@ import java.util.List;
 public interface FamilyMemberRepository extends CrudRepository<FamilyMember, Integer>{
     List<FamilyMember> findByFirstname(String firstname);
     List<FamilyMember> findByLastname(String lastname);
+    List<FamilyMember> findByFirstnameAndLastname(String firstname, String lastname);
 
     @Modifying
     @Query("UPDATE FamilyMember f set f.firstname= :firstname, f.lastname = :lastname, f.occupation= :occupation, f.domicile= :domicile,f.birthDate=:date where f.id=:id")

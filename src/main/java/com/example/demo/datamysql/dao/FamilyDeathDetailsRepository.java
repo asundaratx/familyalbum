@@ -6,10 +6,11 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
-import java.util.List;
 
 public interface FamilyDeathDetailsRepository extends CrudRepository<DeathDetails, Integer> {
     DeathDetails findByMemberId(Integer member_Id);
+
+    void deleteByMemberId(Integer memberId);
 
     @Modifying
     @Query("update DeathDetails d set d.deathDate=:deathDate where d.id=:id")

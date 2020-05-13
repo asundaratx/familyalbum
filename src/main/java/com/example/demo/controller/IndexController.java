@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class IndexController {
     @GetMapping(path = "index")
     public String getIndex(){
-        log.info("At index");
         return "index.html";
     }
 }
