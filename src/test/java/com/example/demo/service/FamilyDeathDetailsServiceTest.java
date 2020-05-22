@@ -29,9 +29,10 @@ public class FamilyDeathDetailsServiceTest {
     }
 
     @Test
-    public void testfindByMemberIdNullMemberOnInvalidCall(){
-        DeathDetails deathDetails = familyDeathDetailsService.findByMemberId(null);
-        assertThat(deathDetails).isNull();
+    public void testfindByMemberIdThrowsExceptionOnInvalidCall(){
+        assertThrows(InvalidParameterException.class, () -> {
+            familyDeathDetailsService.findByMemberId(null);
+        });
     }
 
     @Test
